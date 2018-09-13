@@ -280,6 +280,8 @@ SCLTimerDisplay *buttonTimer;
 - (void)viewWillLayoutSubviews
 {
     [super viewWillLayoutSubviews];
+    // Rodrigo: This fixes a bug when animating with keyboard.
+    [self.view setTranslatesAutoresizingMaskIntoConstraints:NO];
     
     CGSize sz = [self mainScreenFrame].size;
     
@@ -643,26 +645,20 @@ SCLTimerDisplay *buttonTimer;
 
 - (void)keyboardWillShow:(NSNotification *)notification
 {
-    if(_keyboardIsVisible) return;
-    
-    [UIView animateWithDuration:0.2f animations:^{
+    NSDictionary *userInfo = notification.userInfo;
+    CGFloat animationDuration = [(NSNumber *)userInfo[UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    UIViewAnimationOptions curve = [(NSNumber *)userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue];
+    CGRect keyboardFrame = [(NSValue *)userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    [UIView animateWithDuration:animationDuration delay:0 options:curve animations:^{
         CGRect f = self.view.frame;
-        f.origin.y -= KEYBOARD_HEIGHT + PREDICTION_BAR_HEIGHT;
+        f.origin.y = self.backgroundView.bounds.size.height - keyboardFrame.size.height - self.view.bounds.size.height - 10;
         self.view.frame = f;
-    }];
-    _keyboardIsVisible = YES;
+    } completion:nil];
 }
 
 - (void)keyboardWillHide:(NSNotification *)notification
 {
-    if(!_keyboardIsVisible) return;
-    
-    [UIView animateWithDuration:0.2f animations:^{
-        CGRect f = self.view.frame;
-        f.origin.y += KEYBOARD_HEIGHT + PREDICTION_BAR_HEIGHT;
-        self.view.frame = f;
-    }];
-    _keyboardIsVisible = NO;
+    self.view.center = self.backgroundView.center;
 }
 
 #pragma mark - Buttons
